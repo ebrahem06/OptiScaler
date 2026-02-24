@@ -58,7 +58,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
 
         auto pos = libName.rfind(exePath);
 
-        if (Config::Instance()->EnableDlssInputs.value_or_default() && CheckDllNameW(&libName, &nvngxNamesW) &&
+        if (Config::Instance()->EnableDlssInputs.value_or_default() && CheckDllName(libName, nvngxNamesW) &&
             (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
         {
             LOG_INFO("nvngx call: {0}, returning this dll!", libNameA);
@@ -71,7 +71,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     if (!State::Instance().isWorkingAsNvngx &&
-        (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllNameW(&libName, &dllNamesW))
+        (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllName(libName, dllNamesW))
     {
         if (!State::Instance().ServeOriginal())
         {
@@ -87,7 +87,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
 
     // nvngx_dlss
     if (Config::Instance()->DLSSEnabled.value_or_default() && Config::Instance()->NVNGX_DLSS_Library.has_value() &&
-        CheckDllNameW(&libName, &nvngxDlssNamesW))
+        CheckDllName(libName, nvngxDlssNamesW))
     {
         auto nvngxDlss = LoadNvngxDlss(libName);
 
@@ -120,7 +120,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // NvApi64.dll
-    if (CheckDllNameW(&libName, &nvapiNamesW))
+    if (CheckDllName(libName, nvapiNamesW))
     {
         if (Config::Instance()->OverrideNvapiDll.value_or_default())
         {
@@ -157,7 +157,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // sl.interposer.dll
-    if (CheckDllNameW(&libName, &slInterposerNamesW))
+    if (CheckDllName(libName, slInterposerNamesW))
     {
         auto streamlineModule = NtdllProxy::LoadLibraryExW_Ldr(lpLibFullPath, NULL, 0);
 
@@ -177,7 +177,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     // sl.dlss.dll
     // Try to catch something like this:
     // C:\ProgramData/NVIDIA/NGX/models/sl_dlss_0/versions/133120/files/190_E658703.dll
-    if (CheckDllNameW(&libName, &slDlssNamesW) ||
+    if (CheckDllName(libName, slDlssNamesW) ||
         (normalizedPath.contains(L"\\versions\\") && normalizedPath.contains(L"\\sl_dlss_0")))
     {
         auto dlssModule = NtdllProxy::LoadLibraryExW_Ldr(lpLibFullPath, NULL, 0);
@@ -195,7 +195,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // sl.dlss_g.dll
-    if (CheckDllNameW(&libName, &slDlssgNamesW) ||
+    if (CheckDllName(libName, slDlssgNamesW) ||
         (normalizedPath.contains(L"\\versions\\") && normalizedPath.contains(L"\\sl_dlss_g_")))
     {
         auto dlssgModule = NtdllProxy::LoadLibraryExW_Ldr(lpLibFullPath, NULL, 0);
@@ -213,7 +213,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // sl.reflex.dll
-    if (CheckDllNameW(&libName, &slReflexNamesW) ||
+    if (CheckDllName(libName, slReflexNamesW) ||
         (normalizedPath.contains(L"\\versions\\") && normalizedPath.contains(L"\\sl_reflex_")))
     {
         auto reflexModule = NtdllProxy::LoadLibraryExW_Ldr(lpLibFullPath, NULL, 0);
@@ -231,7 +231,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // sl.pcl.dll
-    if (CheckDllNameW(&libName, &slPclNamesW) ||
+    if (CheckDllName(libName, slPclNamesW) ||
         (normalizedPath.contains(L"\\versions\\") && normalizedPath.contains(L"\\sl_pcl_")))
     {
         auto pclModule = NtdllProxy::LoadLibraryExW_Ldr(lpLibFullPath, NULL, 0);
@@ -249,7 +249,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // sl.common.dll
-    if (CheckDllNameW(&libName, &slCommonNamesW) ||
+    if (CheckDllName(libName, slCommonNamesW) ||
         (normalizedPath.contains(L"\\versions\\") && normalizedPath.contains(L"\\sl_common_")))
     {
         auto commonModule = NtdllProxy::LoadLibraryExW_Ldr(lpLibFullPath, NULL, 0);
@@ -266,12 +266,12 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return commonModule;
     }
 
-    if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllNameW(&libName, &blockOverlayNamesW))
+    if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllName(libName, blockOverlayNamesW))
     {
         LOG_DEBUG("Blocking overlay dll: {}", wstring_to_string(libName));
         return (HMODULE) 1337;
     }
-    else if (CheckDllNameW(&libName, &overlayNamesW))
+    else if (CheckDllName(libName, overlayNamesW))
     {
         LOG_DEBUG("Overlay dll: {}", wstring_to_string(libName));
 
@@ -321,7 +321,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     }
 
     // Hooks
-    if (CheckDllNameW(&libName, &dx11NamesW))
+    if (CheckDllName(libName, dx11NamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -331,7 +331,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &dx12NamesW))
+    if (CheckDllName(libName, dx12NamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -344,7 +344,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &dx12agilityNamesW))
+    if (CheckDllName(libName, dx12agilityNamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -354,7 +354,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &vkNamesW))
+    if (CheckDllName(libName, vkNamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -366,7 +366,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (!State::Instance().skipDxgiLoadChecks && CheckDllNameW(&libName, &dxgiNamesW))
+    if (!State::Instance().skipDxgiLoadChecks && CheckDllName(libName, dxgiNamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
@@ -377,7 +377,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         }
     }
 
-    if (CheckDllNameW(&libName, &fsr2NamesW))
+    if (CheckDllName(libName, fsr2NamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -387,7 +387,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &fsr2BENamesW))
+    if (CheckDllName(libName, fsr2BENamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -397,7 +397,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &fsr3NamesW))
+    if (CheckDllName(libName, fsr3NamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -407,7 +407,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &fsr3BENamesW))
+    if (CheckDllName(libName, fsr3BENamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -417,7 +417,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &xessNamesW))
+    if (CheckDllName(libName, xessNamesW))
     {
         auto module = LoadLibxess(libName);
 
@@ -429,7 +429,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &xessDx11NamesW))
+    if (CheckDllName(libName, xessDx11NamesW))
     {
         auto module = LoadLibxessDx11(libName);
 
@@ -441,7 +441,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &ffxDx12NamesW))
+    if (CheckDllName(libName, ffxDx12NamesW))
     {
         auto module = LoadFfxapiDx12(libName);
 
@@ -451,7 +451,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &ffxDx12UpscalerNamesW))
+    if (CheckDllName(libName, ffxDx12UpscalerNamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -463,7 +463,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &ffxDx12FGNamesW))
+    if (CheckDllName(libName, ffxDx12FGNamesW))
     {
         auto module = NtdllProxy::LoadLibraryExW_Ldr(libName.c_str(), NULL, 0);
 
@@ -473,7 +473,7 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
         return module;
     }
 
-    if (CheckDllNameW(&libName, &ffxVkNamesW))
+    if (CheckDllName(libName, ffxVkNamesW))
     {
         auto module = LoadFfxapiVk(libName);
 
@@ -846,117 +846,42 @@ void LibraryLoadHooks::CheckModulesInMemory()
     if (!StreamlineHooks::isInterposerHooked())
     {
         // hook streamline right away if it's already loaded
-        HMODULE slModule = nullptr;
-        slModule = GetDllNameWModule(&slInterposerNamesW);
-        if (slModule != nullptr)
+        if (HMODULE hMod = TryHookModule(slInterposerNamesW, StreamlineHooks::hookInterposer);
+            hMod != nullptr)
         {
-            LOG_DEBUG("sl.interposer.dll already in memory");
-            StreamlineHooks::hookInterposer(slModule);
-            slInterposerModule = slModule;
+            slInterposerModule = hMod;
         }
     }
 
     if (!StreamlineHooks::isDlssHooked())
-    {
-        HMODULE slDlss = nullptr;
-        slDlss = GetDllNameWModule(&slDlssNamesW);
-        if (slDlss != nullptr)
-        {
-            LOG_DEBUG("sl.dlss.dll already in memory");
-            StreamlineHooks::hookDlss(slDlss);
-        }
-    }
+        TryHookModule(slDlssNamesW, StreamlineHooks::hookDlss);
 
     if (!StreamlineHooks::isDlssgHooked())
-    {
-        HMODULE slDlssg = nullptr;
-        slDlssg = GetDllNameWModule(&slDlssgNamesW);
-        if (slDlssg != nullptr)
-        {
-            LOG_DEBUG("sl.dlss_g.dll already in memory");
-            StreamlineHooks::hookDlssg(slDlssg);
-        }
-    }
+        TryHookModule(slDlssgNamesW, StreamlineHooks::hookDlssg);
 
     if (!StreamlineHooks::isReflexHooked())
-    {
-        HMODULE slReflex = nullptr;
-        slReflex = GetDllNameWModule(&slReflexNamesW);
-        if (slReflex != nullptr)
-        {
-            LOG_DEBUG("sl.reflex.dll already in memory");
-            StreamlineHooks::hookReflex(slReflex);
-        }
-    }
+        TryHookModule(slReflexNamesW, StreamlineHooks::hookReflex);
 
     if (!StreamlineHooks::isPclHooked())
-    {
-        HMODULE slPcl = nullptr;
-        slPcl = GetDllNameWModule(&slPclNamesW);
-        if (slPcl != nullptr)
-        {
-            LOG_DEBUG("sl.pcl.dll already in memory");
-            StreamlineHooks::hookPcl(slPcl);
-        }
-    }
+        TryHookModule(slPclNamesW, StreamlineHooks::hookPcl);
 
     if (!StreamlineHooks::isCommonHooked())
-    {
-        HMODULE slCommon = nullptr;
-        slCommon = GetDllNameWModule(&slCommonNamesW);
-        if (slCommon != nullptr)
-        {
-            LOG_DEBUG("sl.common.dll already in memory");
-            StreamlineHooks::hookCommon(slCommon);
-        }
-    }
+        TryHookModule(slCommonNamesW, StreamlineHooks::hookCommon);
 
     // XeSS
     if (XeSSProxy::Module() == nullptr)
-    {
-        HMODULE xessModule = nullptr;
-        xessModule = GetDllNameWModule(&xessNamesW);
-        if (xessModule != nullptr)
-        {
-            LOG_DEBUG("libxess.dll already in memory");
-            XeSSProxy::HookXeSS(xessModule);
-        }
-    }
+        TryHookModule(xessNamesW, XeSSProxy::HookXeSS);
 
     if (XeSSProxy::ModuleDx11() == nullptr)
-    {
-        HMODULE xessDx11Module = nullptr;
-        xessDx11Module = GetDllNameWModule(&xessDx11NamesW);
-        if (xessDx11Module != nullptr)
-        {
-            LOG_DEBUG("libxess_dx11.dll already in memory");
-            XeSSProxy::HookXeSSDx11(xessDx11Module);
-        }
-    }
+        TryHookModule(xessDx11NamesW, XeSSProxy::HookXeSSDx11);
 
     // FFX Dx12
     if (FfxApiProxy::Dx12Module() == nullptr)
-    {
-        HMODULE ffxDx12Module = nullptr;
-        ffxDx12Module = GetDllNameWModule(&ffxDx12NamesW);
-        if (ffxDx12Module != nullptr)
-        {
-            LOG_DEBUG("amd_fidelityfx_dx12.dll already in memory");
-            FfxApiProxy::InitFfxDx12(ffxDx12Module);
-        }
-    }
+        TryHookModule(ffxDx12NamesW, FfxApiProxy::InitFfxDx12);
 
     // FFX Vulkan
     if (FfxApiProxy::VkModule() == nullptr)
-    {
-        HMODULE ffxVkModule = nullptr;
-        ffxVkModule = GetDllNameWModule(&ffxVkNamesW);
-        if (ffxVkModule != nullptr)
-        {
-            LOG_DEBUG("amd_fidelityfx_vk.dll already in memory");
-            FfxApiProxy::InitFfxVk(ffxVkModule);
-        }
-    }
+        TryHookModule(ffxVkNamesW, FfxApiProxy::InitFfxVk);
 }
 
 bool LibraryLoadHooks::EndsWithInsensitive(std::wstring_view text, std::wstring_view suffix)
