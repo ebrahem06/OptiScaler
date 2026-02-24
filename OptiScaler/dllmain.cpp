@@ -241,8 +241,7 @@ void LoadAsiPlugins()
 static void HookEffectModulesLate()
 {
     // hook streamline right away if it's already loaded
-    if (HMODULE hMod = TryHookModule(slInterposerNamesW, StreamlineHooks::hookInterposer);
-        hMod != nullptr)
+    if (HMODULE hMod = TryHookModule(slInterposerNamesW, StreamlineHooks::hookInterposer); hMod != nullptr)
     {
         slInterposerModule = hMod;
     }
@@ -263,13 +262,13 @@ static void HookEffectModulesLate()
     // FFX Dx12
     TryHookModule(ffxDx12NamesW, FfxApiProxy::InitFfxDx12);
 
-    if (HMODULE hMod = TryHookModule(ffxDx12UpscalerNamesW, FSR4ModelSelection::Hook, true);
-        hMod != nullptr)
+    if (HMODULE hMod = TryHookModule(ffxDx12UpscalerNamesW, FSR4ModelSelection::Hook, true); hMod != nullptr)
     {
         FfxApiProxy::InitFfxDx12_SR(hMod);
     }
 
     TryHookModule(ffxDx12FGNamesW, FfxApiProxy::InitFfxDx12_FG);
+    TryHookModule(ffxDx12RRNamesW, FfxApiProxy::InitFfxDx12_RR);
 
     // FFX Vulkan
     TryHookModule(ffxVkNamesW, FfxApiProxy::InitFfxVk);
@@ -919,7 +918,7 @@ static void CheckWorkingMode()
             if (Config::Instance()->DxgiSpoofing.value_or_default() ||
                 Config::Instance()->StreamlineSpoofing.value_or_default())
                 hookAdvapi32();
-            
+
             HookEffectModulesLate();
 
             // Hook kernel32 methods
