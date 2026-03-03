@@ -1080,7 +1080,6 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
     auto& state = State::Instance();
     std::string selectedUpscalerName = "";
     std::string fsr3xName = Config::Instance()->Fsr4Update.value_or_default() ? "FSR 3.X/4" : "FSR 3.X";
-    const bool canUseFSR_RR = FfxApiProxy::VersionDx12_RR().major > 0;
 
     if (State::Instance().newBackend == "fsr21" || (State::Instance().newBackend == "" && *code == "fsr21"))
         selectedUpscalerName = "FSR 2.1.2";
@@ -1088,8 +1087,6 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
         selectedUpscalerName = "FSR 2.2.1";
     else if (State::Instance().newBackend == "fsr31" || (State::Instance().newBackend == "" && *code == "fsr31"))
         selectedUpscalerName = fsr3xName;
-    else if (state.newBackend == OptiKeys::FSR_RR || (state.newBackend == "" && *code == OptiKeys::FSR_RR))
-        selectedUpscalerName = "FSR Ray Regeneration";
     else if (Config::Instance()->DLSSEnabled.value_or_default() &&
              (State::Instance().newBackend == "dlss" || (State::Instance().newBackend == "" && *code == "dlss")))
         selectedUpscalerName = "DLSS";
@@ -1110,8 +1107,6 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
         if (ImGui::Selectable(fsr3xName.c_str(), *code == "fsr31"))
             State::Instance().newBackend = "fsr31";
 
-        if (canUseFSR_RR && ImGui::Selectable("FSR Ray Regeneration", *code == OptiKeys::FSR_RR))
-            state.newBackend = OptiKeys::FSR_RR;
         if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == "dlss"))
             State::Instance().newBackend = "dlss";
 
@@ -2418,7 +2413,7 @@ bool MenuCommon::RenderMenu()
                         spoofingText = config->DxgiSpoofing.value_or_default() ? "On" : "Off";
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
-                        if (currentFeature->Name() != "DLSSD")
+                        if (currentFeature->Name() != "DLSSD" && currentFeature->Name() != OptiTexts::FSR_RR_Name)
                             AddDx12Backends(&currentBackend, &currentBackendName);
 
                         break;
@@ -2454,7 +2449,7 @@ bool MenuCommon::RenderMenu()
 
                     ImGui::PopItemWidth();
 
-                    if (currentFeature->Name() != "DLSSD")
+                    if (currentFeature->Name() != "DLSSD" && currentFeature->Name() != OptiTexts::FSR_RR_Name)
                     {
                         ImGui::SameLine(0.0f, 6.0f);
 
@@ -2634,7 +2629,12 @@ bool MenuCommon::RenderMenu()
                                 MARK_ALL_BACKENDS_CHANGED();
                             }
 
-                            auto majorFsrVersion = currentFeature->Version().major;
+                            feature_version fsrUpscalerVersion = currentFeature->Version();
+
+                            if (currentFeature->Name() == OptiTexts::FSR_RR_Name)
+                                fsrUpscalerVersion = state.ffxDenoiserUpscalerVersion;
+
+                            const uint32_t majorFsrVersion = fsrUpscalerVersion.major;
 
                             if (majorFsrVersion >= 4)
                             {
@@ -2840,8 +2840,8 @@ bool MenuCommon::RenderMenu()
                                 }
                             }
 
-                            if (currentFeature->Version() >= feature_version { 3, 1, 1 } &&
-                                currentFeature->Version() < feature_version { 4, 0, 0 })
+                            if (fsrUpscalerVersion >= feature_version { 3, 1, 1 } &&
+                                fsrUpscalerVersion < feature_version { 4, 0, 0 })
                             {
                                 if (auto ch = ScopedCollapsingHeader("FSR 3 Upscaler Fine Tuning"); ch.IsHeaderOpen())
                                 {
@@ -2859,7 +2859,7 @@ bool MenuCommon::RenderMenu()
                                                    "Lower values are more stable with ghosting\n"
                                                    "Higher values are more pixelly but less ghosting.");
 
-                                    if (currentFeature->Version() >= feature_version { 3, 1, 4 })
+                                    if (fsrUpscalerVersion >= feature_version { 3, 1, 4 })
                                     {
                                         // Reactive Scale
                                         float reactiveScale = config->FsrReactiveScale.value_or_default();
@@ -2912,23 +2912,23 @@ bool MenuCommon::RenderMenu()
                     }
 
                     // FSR Ray Regeneration
-                    if (currentBackend == OptiKeys::FSR_RR)
+                    if (currentFeature->Name() == OptiTexts::FSR_RR_Name)
                     {
                         if (auto ch = ScopedCollapsingHeader("FSR-RR Advanced Settings"); ch.IsHeaderOpen())
                         {
                             if (!state.ffxDenoiserDebugModes.empty())
                             {
-                                int ffxDenoiseDebugMode = config->FfxDenoiserDebugMode.value_or_default();
+                                uint32_t ffxDenoiseDebugMode = config->FfxDenoiserDebugMode.value_or_default();
                                 const char* currentEnum = state.ffxDenoiserDebugModeNames[ffxDenoiseDebugMode];
 
                                 if (ImGui::BeginCombo("Debug Mode", currentEnum))
                                 {
-                                    for (const auto& dbgMode : state.ffxDenoiserDebugModeNames)
+                                    for (const uint32_t dbgMode : state.ffxDenoiserDebugModes)
                                     {
-                                        bool isSelected = dbgMode.first == ffxDenoiseDebugMode;
+                                        bool isSelected = dbgMode == ffxDenoiseDebugMode;
 
-                                        if (ImGui::Selectable(dbgMode.second, &isSelected))
-                                            config->FfxDenoiserDebugMode = dbgMode.first;
+                                        if (ImGui::Selectable(state.ffxDenoiserDebugModeNames[dbgMode], &isSelected))
+                                            config->FfxDenoiserDebugMode = dbgMode;
 
                                         if (isSelected)
                                             ImGui::SetItemDefaultFocus();
