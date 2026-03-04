@@ -252,8 +252,11 @@ md $(SolutionDir)x64\Release\a\Licenses
 del /Q $(SolutionDir)x64\Release\a\Licenses\*.*
 copy $(SolutionDir)external\xess\LICENSE.txt $(SolutionDir)x64\Release\a\Licenses\XeSS_LICENSE.txt /Y
 copy $(SolutionDir)external\xess\bin\*.dll $(SolutionDir)x64\Release\a\ /Y
+
 copy $(SolutionDir)external\FidelityFX-SDK\docs\license.md $(SolutionDir)x64\Release\a\Licenses\FidelityFX_LICENSE.md /Y
 copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\*.dll $(SolutionDir)x64\Release\a\ /Y
+copy $(SolutionDir)external\FidelityFX-SDKv2\Kits\FidelityFX\signedbin\amd_fidelityfx_denoiser_dx12.dll $(SolutionDir)x64\Release\a\ /Y
+
 copy $(SolutionDir)OptiScaler.ini $(SolutionDir)x64\Release\a\ /Y
 copy $(SolutionDir)setup_windows.bat $(SolutionDir)x64\Release\a\ /Y
 copy $(SolutionDir)setup_linux.sh $(SolutionDir)x64\Release\a\ /Y
