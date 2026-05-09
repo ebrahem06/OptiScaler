@@ -1,0 +1,38 @@
+name: Build OptiScaler
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+
+    - name: Restore Packages
+      run: nuget restore OptiScaler.sln
+
+    - name: Build
+      run: |
+        msbuild OptiScaler.sln ^
+        /p:Configuration=Release ^
+        /p:Platform=x64
+
+    - name: Upload Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: OptiScaler-Build
+        path: |
+          **/Release/*.dll
+          **/Release/*.asi
+          **/Release/*.exe
